@@ -64,9 +64,75 @@ let rec pantograph_nm : int -> int list -> int list = (*Recursivlty calling pant
         then h :: pantograph_nm n t
       else pantograph_helper n h @ pantograph_nm n t (*appending@ the list from helper to the return*)
 
-let rec pantograph_f : int -> int list -> int list =
-  fun n lst ->
-    List.fold()
+
+let rec fold_left f acc = (*From Docs*)
+  function
+  | [] -> acc
+  | h :: t -> fold_left f (f acc h) t
+
+let rec pantograph_f : int -> int list -> int list = (*using fold left append ret to the helper*)
+  fun n lst -> 
+    fold_left (fun ret h -> ret @ (pantograph_helper n h)) [] lst
 
 
+let rec coverage : int * int -> int list -> (int * int) list =
+  fun (x, y) lst ->
+    let move (x, y) ins = (* defining move locally*)
+      match ins with
+      | 0 | 1 -> (x, y)
+      | 2 -> (x, y + 1)
+      | 3 -> (x + 1, y)
+      | 4 -> (x, y - 1)
+      | 5 -> (x - 1, y)
+      | _ -> failwith "Invalid instruction"
+    in
+    let rec helper ret_list (x, y) = 
+      function
+      | [] -> ret_list
+      | h :: t ->
+        let next_move = move (x, y) h in (*finding the next move given the next instruction*)
+        helper (next_move :: ret_list) next_move t (*adding the next move to the ret_list*)
+    in
+    List.rev (helper [(x, y)] (x, y) lst) (* have to reverse the list*)
+
+let compress : int list -> (int*int) list =
+  fun lst ->
+  let rec helper current_count current_instruction ret_list = 
+    function
+    | [] -> (match current_count with(*if nothing else*)
+             | 0 -> ret_list  
+             | _ -> (current_instruction, current_count) :: ret_list)  (*if still counting *)
+    | h::t ->
+      (match current_count with
+       | 0 -> helper 1 h ret_list t  (*starting new instruction count *)
+       | _ -> if h = current_instruction then
+                helper (current_count + 1) current_instruction ret_list t  (*if the instructiosn are equal increment the count*)
+              else
+                helper 1 h ((current_instruction, current_count) :: ret_list) t)  (* if not equal then we start new instruction and append the other*)
+  in
+  List.rev (helper 0 0 [] lst)  (*have to reverse it *)
+
+let rec uncompress_helper (instruction, count) =
+  match count with 
+  | 0 -> []
+  | _ -> instruction :: uncompress_helper (instruction, count - 1) (*just repeating the intructions by count*)
+
+let uncompress : (int*int) list -> int list = 
+  fun lst -> 
+    List.concat (List.map uncompress_helper lst) (*mapping the lst to the helper then flattening it*)
+
+(*pen up 1*)
+let optimize : program -> program = 
+  fun lst -> 
+    let rec optimize_helper last ret_lst = 
+    function
+    | [] -> List.rev ret_lst
+    | h :: t -> match h with
+      | 1 -> 
+        if last = h (*if the curr = laststate = 1 then we move on*)
+          then optimize_helper last ret_lst t  
+        else optimize_helper h (h :: ret_lst) t  (*else we appened to the ret_lst*)
+      | _ -> optimize_helper h (h :: ret_lst) t
+  in
+  optimize_helper 1 [] lst (*pass pen up as first state*)
 
