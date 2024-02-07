@@ -280,3 +280,30 @@ let rec fold f a t =
   match t with
   |Empty -> a 
   | Node(d,lt,rt) -> f d (fold f a lt) (fold f a rt)
+
+
+
+(*eval_expr e evaulates an expression e*)
+type 'a result = Error of string | Ok of 'a
+
+let (>>=) = 
+fun c f ->
+  match c with
+  | Error s -> Error s
+  | Ok n -> f n
+
+let rec eval_expr =
+  fun e ->
+    match e with
+    | Int n -> n
+    | Sub(e1,e2) -> 
+      eval_expr e1 >>= fun m ->
+      eval_expr e2 >>= fun n ->
+      Ok (m-n)
+
+    | Div(e1,e2) ->
+      eval_expr e1 >>= fun m ->
+      eval_expr e2 >>= fun n ->
+      if n = 0
+        then Error "div by 0"
+      else return (m/n)

@@ -79,7 +79,7 @@ let rec coverage : int * int -> int list -> (int * int) list =
   fun (x, y) lst ->
     let move (x, y) ins = (* defining move locally*)
       match ins with
-      | 0 | 1 -> (x, y)
+      | 0 | 1 -> (x, y) 
       | 2 -> (x, y + 1)
       | 3 -> (x + 1, y)
       | 4 -> (x, y - 1)
